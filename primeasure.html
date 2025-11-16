@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Attack & Defense Playground</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --accent: #7209b7;
+            --success: #4cc9f0;
+            --warning: #f72585;
+            --danger: #ef233c;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --border: #dee2e6;
+            --sidebar-width: 320px;
+            --inspector-width: 350px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fb;
+            color: var(--dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--primary);
+            color: white;
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .main-header {
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .visualization-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        /* Inspector Styles */
+        .inspector {
+            width: var(--inspector-width);
+            background: white;
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .inspector-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--primary);
+            color: white;
+        }
+        
+        .inspector-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        /* Card Styles */
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .card-title {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+        
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: var(--secondary);
+        }
+        
+        .btn-secondary {
+            background-color: var(--gray);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background-color: #d90429;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+        }
+        
+        .btn-success:hover {
+            background-color: #3a86ff;
+        }
+        
+        /* Table Styles */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .data-table th {
+            background-color: rgba(67, 97, 238, 0.1);
+            font-weight: 600;
+        }
+        
+        .data-table tr:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        /* Chart Styles */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 2px solid var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Slider */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .slider-container input[type="range"] {
+            flex: 1;
+        }
+        
+        .slider-value {
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background: rgba(67, 97, 238, 0.05);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+        
+        /* Risk indicators */
+        .risk-low { color: #28a745; }
+        .risk-medium { color: #ffc107; }
+        .risk-high { color: #dc3545; }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar, .inspector {
+                width: 100%;
+                height: auto;
+            }
+            
+            .visualization-area {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            border-bottom: 1px dotted var(--gray);
+            cursor: help;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 300px;
+            background-color: var(--dark);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85rem;
+            font-weight: normal;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Math display */
+        .math {
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+        }
+        
+        /* Hidden */
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Privacy Playground</h2>
+                <p>Attack & Defense Simulation</p>
+            </div>
+            <div class="sidebar-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Data Input</h3>
+                    </div>
+                    <div class="tabs">
+                        <div class="tab active" data-tab="upload">Upload</div>
+                        <div class="tab" data-tab="sample">Sample Data</div>
+                    </div>
+                    
+                    <div class="tab-content active" id="upload-tab">
+                        <div class="form-group">
+                            <label for="fileInput">Upload CSV/JSON</label>
+                            <input type="file" id="fileInput" accept=".csv,.json">
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="sample-tab">
+                        <div class="form-group">
+                            <label for="sampleDataset">Select Sample Dataset</label>
+                            <select id="sampleDataset">
+                                <option value="health">Health Records (Age, ZIP, Disease)</option>
+                                <option value="salary">Employee Salaries</option>
+                                <option value="census">Census Data</option>
+                            </select>
+                        </div>
+                        <button id="loadSampleBtn">Load Sample Data</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="externalData">Upload External Data (for re-identification)</label>
+                        <input type="file" id="externalData" accept=".csv,.json">
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Privacy Settings</h3>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="quasiIdentifiers">Quasi-Identifiers <span class="tooltip">?
+                            <span class="tooltiptext">Attributes that could be combined to identify individuals (e.g., age, ZIP code, gender)</span>
+                        </span></label>
+                        <div id="quasiIdentifiers"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sensitiveAttribute">Sensitive Attribute <span class="tooltip">?
+                            <span class="tooltiptext">The attribute you want to protect from disclosure (e.g., disease, salary)</span>
+                        </span></label>
+                        <select id="sensitiveAttribute"></select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="privacyModel">Privacy Model</label>
+                        <select id="privacyModel">
+                            <option value="kAnonymity">k-Anonymity</option>
+                            <option value="lDiversity">l-Diversity</option>
+                            <option value="tCloseness">t-Closeness</option>
+                            <option value="differential">Differential Privacy</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="kGroup">
+                        <label for="kValue">k (Minimum Group Size) <span class="tooltip">?
+                            <span class="tooltiptext">Each equivalence class must contain at least k records</span>
+                        </span></label>
+                        <div class="slider-container">
+                            <input type="range" id="kValue" min="2" max="20" step="1" value="3">
+                            <span class="slider-value" id="kValueDisplay">3</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group hidden" id="lGroup">
+                        <label for="lValue">l (Diversity Requirement) <span class="tooltip">?
+                            <span class="tooltiptext">Each equivalence class must have at least l distinct sensitive values</span>
+                        </span></label>
+                        <div class="slider-container">
+                            <input type="range" id="lValue" min="2" max="10" step="1" value="2">
+                            <span class="slider-value" id="lValueDisplay">2</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group hidden" id="tGroup">
+                        <label for="tValue">t (Closeness Threshold) <span class="tooltip">?
+                            <span class="tooltiptext">Distance between class distribution and global distribution must be ≤ t</span>
+                        </span></label>
+                        <div class="slider-container">
+                            <input type="range" id="tValue" min="0.01" max="0.5" step="0.01" value="0.1">
+                            <span class="slider-value" id="tValueDisplay">0.10</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group hidden" id="dpGroup">
+                        <label for="epsilon">Epsilon (ε) <span class="tooltip">?
+                            <span class="tooltiptext">Privacy budget - lower values provide stronger privacy</span>
+                        </span></label>
+                        <div class="slider-container">
+                            <input type="range" id="epsilon" min="0.01" max="5" step="0.01" value="1.0">
+                            <span class="slider-value" id="epsilonDisplay">1.00</span>
+                        </div>
+                        
+                        <label for="delta">Delta (δ) <span class="tooltip">?
+                            <span class="tooltiptext">Probability of privacy failure (for Gaussian mechanism)</span>
+                        </span></label>
+                        <div class="slider-container">
+                            <input type="range" id="delta" min="0.001" max="0.1" step="0.001" value="0.01">
+                            <span class="slider-value" id="deltaDisplay">0.010</span>
+                        </div>
+                        
+                        <label for="sensitivity">Sensitivity (Δf) <span class="tooltip">?
+                            <span class="tooltiptext">Maximum change in output when one record changes</span>
+                        </span></label>
+                        <input type="number" id="sensitivity" step="0.1" value="1.0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="transformations">Transformations</label>
+                        <div>
+                            <input type="checkbox" id="generalization" checked>
+                            <label for="generalization">Generalization</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" id="suppression">
+                            <label for="suppression">Suppression</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" id="noise">
+                            <label for="noise">Noise Addition</label>
+                        </div>
+                    </div>
+                    
+                    <button id="applyBtn">Apply Privacy Protection</button>
+                    <button id="revertBtn" class="btn-secondary">Revert to Original</button>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Export</h3>
+                    </div>
+                    <button id="exportCsvBtn" class="btn-success">Export Anonymized CSV</button>
+                    <button id="exportJsonBtn" class="btn-success">Export Anonymized JSON</button>
+                    <button id="exportReportBtn" class="btn-secondary">Export Report (JSON)</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header">
+                <h2>Privacy Attack & Defense Visualization</h2>
+                <div>
+                    <button id="sweepBtn">Sweep Parameters</button>
+                    <button id="resetBtn" class="btn-danger">Reset</button>
+                </div>
+            </div>
+            
+            <div class="visualization-area">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Data Comparison</h3>
+                    </div>
+                    <div class="tabs">
+                        <div class="tab active" data-tab="table">Table View</div>
+                        <div class="tab" data-tab="histogram">Distribution</div>
+                    </div>
+                    
+                    <div class="tab-content active" id="table-tab">
+                        <div style="overflow-x: auto;">
+                            <table class="data-table" id="comparisonTable">
+                                <!-- Table will be populated by JavaScript -->
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="histogram-tab">
+                        <div class="chart-container">
+                            <canvas id="distributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Risk vs Utility Trade-off</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="tradeoffChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Equivalence Classes</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="equivalenceChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Risk Heatmap</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="heatmapChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Inspector -->
+        <div class="inspector">
+            <div class="inspector-header">
+                <h2>Privacy Metrics</h2>
+                <p>Detailed Analysis</p>
+            </div>
+            <div class="inspector-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Privacy Metrics</h3>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="kValueMetric">-</div>
+                            <div class="stat-label">k-Anonymity</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="lValueMetric">-</div>
+                            <div class="stat-label">l-Diversity</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="tValueMetric">-</div>
+                            <div class="stat-label">t-Closeness</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="reidRisk">-</div>
+                            <div class="stat-label">Re-ID Risk</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Information Loss</h3>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="naeMetric">-</div>
+                            <div class="stat-label">NAE</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="mseMetric">-</div>
+                            <div class="stat-label">MSE</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="entropyMetric">-</div>
+                            <div class="stat-label">Entropy</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="utilityMetric">-</div>
+                            <div class="stat-label">Utility</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Equivalence Classes</h3>
+                    </div>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <table class="data-table" id="equivalenceTable">
+                            <thead>
+                                <tr>
+                                    <th>Class ID</th>
+                                    <th>Size</th>
+                                    <th>Diversity</th>
+                                    <th>Risk</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Re-identification Results</h3>
+                    </div>
+                    <div id="reidResults">
+                        <p>No external data uploaded for re-identification attack.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let originalData = [];
+        let anonymizedData = [];
+        let externalData = [];
+        let columns = [];
+        let numericColumns = [];
+        let currentPrivacyModel = 'kAnonymity';
+        let charts = {};
+        
+        // Sample datasets
+        const sampleDatasets = {
+            health: [
+                { id: 1, age: 35, zip: 12345, gender: 'M', disease: 'Flu' },
+                { id: 2, age: 42, zip: 12346, gender: 'F', disease: 'Cancer' },
+                { id: 3, age: 28, zip: 12345, gender: 'M', disease: 'Flu' },
+                { id: 4, age: 35, zip: 12347, gender: 'F', disease: 'Diabetes' },
+                { id: 5, age: 50, zip: 12348, gender: 'M', disease: 'Heart Disease' },
+                { id: 6, age: 42, zip: 12345, gender: 'F', disease: 'Cancer' },
+                { id: 7, age: 28, zip: 12349, gender: 'M', disease: 'Flu' },
+                { id: 8, age: 35, zip: 12346, gender: 'F', disease: 'Diabetes' },
+                { id: 9, age: 50, zip: 12347, gender: 'M', disease: 'Heart Disease' },
+                { id: 10, age: 42, zip: 12348, gender: 'F', disease: 'Cancer' }
+            ],
+            salary: [
+                { id: 1, age: 25, department: 'Engineering', experience: 2, salary: 65000 },
+                { id: 2, age: 30, department: 'Marketing', experience: 5, salary: 72000 },
+                { id: 3, age: 35, department: 'Engineering', experience: 8, salary: 95000 },
+                { id: 4, age: 28, department: 'HR', experience: 3, salary: 58000 },
+                { id: 5, age: 45, department: 'Engineering', experience: 15, salary: 120000 },
+                { id: 6, age: 32, department: 'Marketing', experience: 6, salary: 78000 },
+                { id: 7, age: 29, department: 'HR', experience: 4, salary: 62000 },
+                { id: 8, age: 38, department: 'Engineering', experience: 10, salary: 105000 },
+                { id: 9, age: 27, department: 'Marketing', experience: 3, salary: 68000 },
+                { id: 10, age: 41, department: 'Engineering', experience: 12, salary: 115000 }
+            ],
+            census: [
+                { id: 1, age: 22, education: 'High School', marital: 'Single', income: 25000 },
+                { id: 2, age: 35, education: 'Bachelor', marital: 'Married', income: 65000 },
+                { id: 3, age: 28, education: 'Master', marital: 'Single', income: 75000 },
+                { id: 4, age: 45, education: 'PhD', marital: 'Married', income: 110000 },
+                { id: 5, age: 52, education: 'Bachelor', marital: 'Divorced', income: 82000 },
+                { id: 6, age: 31, education: 'High School', marital: 'Married', income: 42000 },
+                { id: 7, age: 26, education: 'Master', marital: 'Single', income: 68000 },
+                { id: 8, age: 39, education: 'Bachelor', marital: 'Married', income: 78000 },
+                { id: 9, age: 47, education: 'PhD', marital: 'Married', income: 125000 },
+                { id: 10, age: 29, education: 'High School', marital: 'Single', income: 32000 }
+            ]
+        };
+
+        // DOM elements
+        const fileInput = document.getElementById('fileInput');
+        const sampleDataset = document.getElementById('sampleDataset');
+        const loadSampleBtn = document.getElementById('loadSampleBtn');
+        const externalDataInput = document.getElementById('externalData');
+        const quasiIdentifiersDiv = document.getElementById('quasiIdentifiers');
+        const sensitiveAttributeSelect = document.getElementById('sensitiveAttribute');
+        const privacyModelSelect = document.getElementById('privacyModel');
+        const kGroup = document.getElementById('kGroup');
+        const lGroup = document.getElementById('lGroup');
+        const tGroup = document.getElementById('tGroup');
+        const dpGroup = document.getElementById('dpGroup');
+        const kValue = document.getElementById('kValue');
+        const kValueDisplay = document.getElementById('kValueDisplay');
+        const lValue = document.getElementById('lValue');
+        const lValueDisplay = document.getElementById('lValueDisplay');
+        const tValue = document.getElementById('tValue');
+        const tValueDisplay = document.getElementById('tValueDisplay');
+        const epsilon = document.getElementById('epsilon');
+        const epsilonDisplay = document.getElementById('epsilonDisplay');
+        const delta = document.getElementById('delta');
+        const deltaDisplay = document.getElementById('deltaDisplay');
+        const sensitivity = document.getElementById('sensitivity');
+        const generalizationCheck = document.getElementById('generalization');
+        const suppressionCheck = document.getElementById('suppression');
+        const noiseCheck = document.getElementById('noise');
+        const applyBtn = document.getElementById('applyBtn');
+        const revertBtn = document.getElementById('revertBtn');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const exportJsonBtn = document.getElementById('exportJsonBtn');
+        const exportReportBtn = document.getElementById('exportReportBtn');
+        const sweepBtn = document.getElementById('sweepBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const comparisonTable = document.getElementById('comparisonTable');
+        const equivalenceTable = document.getElementById('equivalenceTable');
+        const reidResults = document.getElementById('reidResults');
+        const kValueMetric = document.getElementById('kValueMetric');
+        const lValueMetric = document.getElementById('lValueMetric');
+        const tValueMetric = document.getElementById('tValueMetric');
+        const reidRisk = document.getElementById('reidRisk');
+        const naeMetric = document.getElementById('naeMetric');
+        const mseMetric = document.getElementById('mseMetric');
+        const entropyMetric = document.getElementById('entropyMetric');
+        const utilityMetric = document.getElementById('utilityMetric');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', initApp);
+        fileInput.addEventListener('change', handleFileUpload);
+        loadSampleBtn.addEventListener('click', loadSampleData);
+        externalDataInput.addEventListener('change', handleExternalDataUpload);
+        privacyModelSelect.addEventListener('change', updatePrivacyModelUI);
+        kValue.addEventListener('input', () => kValueDisplay.textContent = kValue.value);
+        lValue.addEventListener('input', () => lValueDisplay.textContent = lValue.value);
+        tValue.addEventListener('input', () => tValueDisplay.textContent = parseFloat(tValue.value).toFixed(2));
+        epsilon.addEventListener('input', () => epsilonDisplay.textContent = parseFloat(epsilon.value).toFixed(2));
+        delta.addEventListener('input', () => deltaDisplay.textContent = parseFloat(delta.value).toFixed(3));
+        applyBtn.addEventListener('click', applyPrivacyProtection);
+        revertBtn.addEventListener('click', revertToOriginal);
+        exportCsvBtn.addEventListener('click', exportAnonymizedCsv);
+        exportJsonBtn.addEventListener('click', exportAnonymizedJson);
+        exportReportBtn.addEventListener('click', exportReport);
+        sweepBtn.addEventListener('click', sweepParameters);
+        resetBtn.addEventListener('click', resetApp);
+
+        // Tab switching
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Update active tab
+                tabs.forEach(t => {
+                    if (t.getAttribute('data-tab') === tabId) {
+                        t.classList.add('active');
+                    } else {
+                        t.classList.remove('active');
+                    }
+                });
+                
+                // Show corresponding content
+                tabContents.forEach(content => {
+                    if (content.id === `${tabId}-tab`) {
+                        content.classList.add('active');
+                    } else {
+                        content.classList.remove('active');
+                    }
+                });
+            });
+        });
+
+        // Initialize the application
+        function initApp() {
+            // Load from localStorage if available
+            const savedData = localStorage.getItem('privacyPlaygroundData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                originalData = data.originalData || [];
+                anonymizedData = data.anonymizedData || [];
+                columns = data.columns || [];
+                
+                if (originalData.length > 0) {
+                    setupUI();
+                    updateCharts();
+                    updateMetrics();
+                }
+            } else {
+                // Load default sample data
+                loadSampleData();
+            }
+            
+            // Initialize charts
+            initializeCharts();
+        }
+
+        // Handle file upload
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            
+            if (fileExtension === 'csv') {
+                parseCSV(file);
+            } else if (fileExtension === 'json') {
+                parseJSON(file);
+            } else {
+                alert('Please upload a CSV or JSON file.');
+            }
+        }
+
+        // Parse CSV file
+        function parseCSV(file) {
+            Papa.parse(file, {
+                header: true,
+                dynamicTyping: true,
+                complete: function(results) {
+                    if (results.errors.length) {
+                        alert('Error parsing CSV: ' + results.errors[0].message);
+                        return;
+                    }
+                    
+                    originalData = results.data.filter(row => {
+                        // Filter out empty rows
+                        return Object.values(row).some(value => value !== null && value !== undefined && value !== '');
+                    });
+                    
+                    anonymizedData = JSON.parse(JSON.stringify(originalData));
+                    setupUI();
+                    saveToLocalStorage();
+                }
+            });
+        }
+
+        // Parse JSON file
+        function parseJSON(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    originalData = JSON.parse(e.target.result);
+                    anonymizedData = JSON.parse(JSON.stringify(originalData));
+                    setupUI();
+                    saveToLocalStorage();
+                } catch (error) {
+                    alert('Error parsing JSON: ' + error.message);
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+
+        // Handle external data upload
+        function handleExternalDataUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            
+            if (fileExtension === 'csv') {
+                Papa.parse(file, {
+                    header: true,
+                    dynamicTyping: true,
+                    complete: function(results) {
+                        if (results.errors.length) {
+                            alert('Error parsing CSV: ' + results.errors[0].message);
+                            return;
+                        }
+                        
+                        externalData = results.data;
+                        performReidentificationAttack();
+                    }
+                });
+            } else if (fileExtension === 'json') {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        externalData = JSON.parse(e.target.result);
+                        performReidentificationAttack();
+                    } catch (error) {
+                        alert('Error parsing JSON: ' + error.message);
+                    }
+                };
+                
+                reader.readAsText(file);
+            } else {
+                alert('Please upload a CSV or JSON file.');
+            }
+        }
+
+        // Load sample data
+        function loadSampleData() {
+            const datasetType = sampleDataset.value;
+            originalData = JSON.parse(JSON.stringify(sampleDatasets[datasetType]));
+            anonymizedData = JSON.parse(JSON.stringify(originalData));
+            setupUI();
+            saveToLocalStorage();
+        }
+
+        // Setup UI after data is loaded
+        function setupUI() {
+            if (originalData.length === 0) return;
+            
+            // Get column names
+            columns = Object.keys(originalData[0]);
+            numericColumns = columns.filter(col => 
+                originalData.some(row => typeof row[col] === 'number')
+            );
+            
+            // Setup quasi-identifiers checkboxes
+            quasiIdentifiersDiv.innerHTML = '';
+            columns.forEach(col => {
+                if (col !== 'id') {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <input type="checkbox" id="qi-${col}" value="${col}" ${col === 'age' || col === 'zip' ? 'checked' : ''}>
+                        <label for="qi-${col}">${col}</label>
+                    `;
+                    quasiIdentifiersDiv.appendChild(div);
+                }
+            });
+            
+            // Setup sensitive attribute dropdown
+            sensitiveAttributeSelect.innerHTML = '';
+            columns.forEach(col => {
+                if (col !== 'id') {
+                    const option = document.createElement('option');
+                    option.value = col;
+                    option.textContent = col;
+                    if (col === 'disease' || col === 'salary') {
+                        option.selected = true;
+                    }
+                    sensitiveAttributeSelect.appendChild(option);
+                }
+            });
+            
+            // Update UI
+            updateDataTable();
+            updateCharts();
+            updateMetrics();
+        }
+
+        // Update privacy model UI
+        function updatePrivacyModelUI() {
+            currentPrivacyModel = privacyModelSelect.value;
+            
+            // Hide all parameter groups
+            kGroup.style.display = 'none';
+            lGroup.style.display = 'none';
+            tGroup.style.display = 'none';
+            dpGroup.style.display = 'none';
+            
+            // Show relevant parameter group
+            switch(currentPrivacyModel) {
+                case 'kAnonymity':
+                    kGroup.style.display = 'block';
+                    break;
+                case 'lDiversity':
+                    kGroup.style.display = 'block';
+                    lGroup.style.display = 'block';
+                    break;
+                case 'tCloseness':
+                    kGroup.style.display = 'block';
+                    tGroup.style.display = 'block';
+                    break;
+                case 'differential':
+                    dpGroup.style.display = 'block';
+                    break;
+            }
+        }
+
+        // Apply privacy protection
+        function applyPrivacyProtection() {
+            if (originalData.length === 0) {
+                alert('Please load data first.');
+                return;
+            }
+            
+            // Reset to original data
+            anonymizedData = JSON.parse(JSON.stringify(originalData));
+            
+            // Get selected quasi-identifiers
+            const quasiIdentifiers = [];
+            document.querySelectorAll('#quasiIdentifiers input:checked').forEach(checkbox => {
+                quasiIdentifiers.push(checkbox.value);
+            });
+            
+            const sensitiveAttribute = sensitiveAttributeSelect.value;
+            const k = parseInt(kValue.value);
+            const l = parseInt(lValue.value);
+            const t = parseFloat(tValue.value);
+            const eps = parseFloat(epsilon.value);
+            const del = parseFloat(delta.value);
+            const sens = parseFloat(sensitivity.value);
+            
+            // Apply selected transformations
+            if (generalizationCheck.checked) {
+                applyGeneralization(anonymizedData, quasiIdentifiers);
+            }
+            
+            if (suppressionCheck.checked) {
+                applySuppression(anonymizedData, quasiIdentifiers, sensitiveAttribute);
+            }
+            
+            if (noiseCheck.checked) {
+                applyNoise(anonymizedData, numericColumns, eps, del, sens);
+            }
+            
+            // Apply privacy model
+            switch(currentPrivacyModel) {
+                case 'kAnonymity':
+                    enforceKAnonymity(anonymizedData, quasiIdentifiers, k);
+                    break;
+                case 'lDiversity':
+                    enforceLDiversity(anonymizedData, quasiIdentifiers, sensitiveAttribute, k, l);
+                    break;
+                case 'tCloseness':
+                    enforceTCloseness(anonymizedData, quasiIdentifiers, sensitiveAttribute, k, t);
+                    break;
+                case 'differential':
+                    // Differential privacy is applied via noise addition
+                    break;
+            }
+            
+            // Update UI
+            updateDataTable();
+            updateCharts();
+            updateMetrics();
+            saveToLocalStorage();
+        }
+
+        // Apply generalization
+        function applyGeneralization(data, quasiIdentifiers) {
+            data.forEach(row => {
+                quasiIdentifiers.forEach(col => {
+                    if (typeof row[col] === 'number') {
+                        // Generalize numeric values to ranges
+                        const value = row[col];
+                        if (col === 'age') {
+                            if (value < 30) row[col] = '20-29';
+                            else if (value < 40) row[col] = '30-39';
+                            else if (value < 50) row[col] = '40-49';
+                            else row[col] = '50+';
+                        } else if (col === 'zip') {
+                            // Truncate ZIP code
+                            row[col] = String(row[col]).substring(0, 3) + 'XX';
+                        } else {
+                            // Generalize to deciles
+                            const min = Math.min(...data.map(r => r[col]));
+                            const max = Math.max(...data.map(r => r[col]));
+                            const range = max - min;
+                            const decile = Math.floor((value - min) / (range / 10));
+                            row[col] = `${Math.round(min + decile * (range / 10))}-${Math.round(min + (decile + 1) * (range / 10))}`;
+                        }
+                    }
+                });
+            });
+        }
+
+        // Apply suppression
+        function applySuppression(data, quasiIdentifiers, sensitiveAttribute) {
+            // Randomly suppress some values
+            data.forEach(row => {
+                if (Math.random() < 0.2) { // 20% chance of suppression
+                    const colToSuppress = quasiIdentifiers[Math.floor(Math.random() * quasiIdentifiers.length)];
+                    row[colToSuppress] = '*';
+                }
+                
+                // Suppress sensitive attribute for small groups
+                if (Math.random() < 0.1) { // 10% chance of sensitive attribute suppression
+                    row[sensitiveAttribute] = '*';
+                }
+            });
+        }
+
+        // Apply noise
+        function applyNoise(data, numericColumns, epsilon, delta, sensitivity) {
+            numericColumns.forEach(col => {
+                data.forEach(row => {
+                    if (typeof row[col] === 'number') {
+                        // Apply Laplace noise for demonstration
+                        const scale = sensitivity / epsilon;
+                        const u = Math.random() - 0.5;
+                        const noise = -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
+                        row[col] = row[col] + noise;
+                    }
+                });
+            });
+        }
+
+        // Enforce k-anonymity
+        function enforceKAnonymity(data, quasiIdentifiers, k) {
+            // Group records by quasi-identifiers
+            const groups = {};
+            data.forEach(row => {
+                const key = quasiIdentifiers.map(col => row[col]).join('|');
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(row);
+            });
+            
+            // Find groups smaller than k
+            const smallGroups = Object.keys(groups).filter(key => groups[key].length < k);
+            
+            // For demonstration, we'll suppress quasi-identifiers in small groups
+            smallGroups.forEach(key => {
+                groups[key].forEach(row => {
+                    quasiIdentifiers.forEach(col => {
+                        row[col] = '*';
+                    });
+                });
+            });
+        }
+
+        // Enforce l-diversity
+        function enforceLDiversity(data, quasiIdentifiers, sensitiveAttribute, k, l) {
+            // First enforce k-anonymity
+            enforceKAnonymity(data, quasiIdentifiers, k);
+            
+            // Then check l-diversity
+            const groups = {};
+            data.forEach(row => {
+                const key = quasiIdentifiers.map(col => row[col]).join('|');
+                if (!groups[key]) groups[key] = { records: [], sensitiveValues: new Set() };
+                groups[key].records.push(row);
+                groups[key].sensitiveValues.add(row[sensitiveAttribute]);
+            });
+            
+            // Find groups with insufficient diversity
+            const nonDiverseGroups = Object.keys(groups).filter(key => 
+                groups[key].sensitiveValues.size < l
+            );
+            
+            // For demonstration, suppress sensitive values in non-diverse groups
+            nonDiverseGroups.forEach(key => {
+                groups[key].records.forEach(row => {
+                    row[sensitiveAttribute] = '*';
+                });
+            });
+        }
+
+        // Enforce t-closeness
+        function enforceTCloseness(data, quasiIdentifiers, sensitiveAttribute, k, t) {
+            // First enforce k-anonymity
+            enforceKAnonymity(data, quasiIdentifiers, k);
+            
+            // For demonstration, we'll use a simplified approach
+            // In a real implementation, we would calculate Earth Mover's Distance
+            const globalDistribution = calculateDistribution(data, sensitiveAttribute);
+            
+            const groups = {};
+            data.forEach(row => {
+                const key = quasiIdentifiers.map(col => row[col]).join('|');
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(row);
+            });
+            
+            // Find groups that don't satisfy t-closeness
+            const nonCloseGroups = Object.keys(groups).filter(key => {
+                const groupDistribution = calculateDistribution(groups[key], sensitiveAttribute);
+                // Simplified distance calculation (not actual EMD)
+                let distance = 0;
+                Object.keys(globalDistribution).forEach(value => {
+                    const globalProb = globalDistribution[value] || 0;
+                    const groupProb = groupDistribution[value] || 0;
+                    distance += Math.abs(globalProb - groupProb);
+                });
+                return distance > t;
+            });
+            
+            // For demonstration, suppress sensitive values in non-close groups
+            nonCloseGroups.forEach(key => {
+                groups[key].forEach(row => {
+                    row[sensitiveAttribute] = '*';
+                });
+            });
+        }
+
+        // Calculate distribution of values for an attribute
+        function calculateDistribution(data, attribute) {
+            const counts = {};
+            data.forEach(row => {
+                const value = row[attribute];
+                counts[value] = (counts[value] || 0) + 1;
+            });
+            
+            const total = data.length;
+            const distribution = {};
+            Object.keys(counts).forEach(value => {
+                distribution[value] = counts[value] / total;
+            });
+            
+            return distribution;
+        }
+
+        // Revert to original data
+        function revertToOriginal() {
+            anonymizedData = JSON.parse(JSON.stringify(originalData));
+            updateDataTable();
+            updateCharts();
+            updateMetrics();
+            saveToLocalStorage();
+        }
+
+        // Update data table
+        function updateDataTable() {
+            if (originalData.length === 0) return;
+            
+            let tableHTML = '<thead><tr><th>ID</th>';
+            
+            // Add column headers
+            columns.forEach(col => {
+                if (col !== 'id') {
+                    tableHTML += `<th>${col} (Original)</th><th>${col} (Anonymized)</th>`;
+                }
+            });
+            
+            tableHTML += '</tr></thead><tbody>';
+            
+            // Add data rows (first 10 records)
+            const displayCount = Math.min(10, originalData.length);
+            for (let i = 0; i < displayCount; i++) {
+                tableHTML += '<tr>';
+                tableHTML += `<td>${originalData[i].id || i+1}</td>`;
+                
+                columns.forEach(col => {
+                    if (col !== 'id') {
+                        const originalVal = originalData[i][col];
+                        const anonymizedVal = anonymizedData[i][col];
+                        const isChanged = originalVal !== anonymizedVal;
+                        
+                        tableHTML += `<td>${originalVal}</td>`;
+                        tableHTML += `<td ${isChanged ? 'style="background-color: rgba(255, 0, 0, 0.1);"' : ''}>${anonymizedVal}</td>`;
+                    }
+                });
+                
+                tableHTML += '</tr>';
+            }
+            
+            tableHTML += '</tbody>';
+            comparisonTable.innerHTML = tableHTML;
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            // Distribution chart
+            const distributionCtx = document.getElementById('distributionChart').getContext('2d');
+            charts.distribution = new Chart(distributionCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Original',
+                            data: [],
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Anonymized',
+                            data: [],
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Trade-off chart
+            const tradeoffCtx = document.getElementById('tradeoffChart').getContext('2d');
+            charts.tradeoff = new Chart(tradeoffCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Privacy vs Utility',
+                            data: [],
+                            backgroundColor: 'rgba(153, 102, 255, 0.5)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Privacy Parameter'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Utility Loss (%)'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Equivalence class chart
+            const equivalenceCtx = document.getElementById('equivalenceChart').getContext('2d');
+            charts.equivalence = new Chart(equivalenceCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Equivalence Class Sizes',
+                            data: [],
+                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Heatmap chart
+            const heatmapCtx = document.getElementById('heatmapChart').getContext('2d');
+            charts.heatmap = new Chart(heatmapCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Risk Distribution',
+                            data: [],
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Record ID'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Re-identification Risk'
+                            },
+                            beginAtZero: true,
+                            max: 1
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update charts
+        function updateCharts() {
+            if (originalData.length === 0) return;
+            
+            const sensitiveAttribute = sensitiveAttributeSelect.value;
+            
+            // Update distribution chart
+            const originalDistribution = calculateDistribution(originalData, sensitiveAttribute);
+            const anonymizedDistribution = calculateDistribution(anonymizedData, sensitiveAttribute);
+            
+            charts.distribution.data.labels = Object.keys(originalDistribution);
+            charts.distribution.data.datasets[0].data = Object.values(originalDistribution);
+            charts.distribution.data.datasets[1].data = Object.keys(originalDistribution).map(
+                key => anonymizedDistribution[key] || 0
+            );
+            charts.distribution.update();
+            
+            // Update equivalence class chart
+            const quasiIdentifiers = Array.from(document.querySelectorAll('#quasiIdentifiers input:checked'))
+                .map(checkbox => checkbox.value);
+            
+            if (quasiIdentifiers.length > 0) {
+                const groups = {};
+                anonymizedData.forEach(row => {
+                    const key = quasiIdentifiers.map(col => row[col]).join('|');
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(row);
+                });
+                
+                const groupSizes = Object.values(groups).map(group => group.length);
+                charts.equivalence.data.labels = Object.keys(groups).map((_, i) => `Group ${i+1}`);
+                charts.equivalence.data.datasets[0].data = groupSizes;
+                charts.equivalence.update();
+                
+                // Update equivalence table
+                updateEquivalenceTable(groups, sensitiveAttribute);
+            }
+            
+            // Update heatmap chart
+            const riskData = anonymizedData.map((row, i) => ({
+                x: i+1,
+                y: calculateReidentificationRisk(row, quasiIdentifiers)
+            }));
+            
+            charts.heatmap.data.datasets[0].data = riskData;
+            charts.heatmap.update();
+        }
+
+        // Update equivalence table
+        function updateEquivalenceTable(groups, sensitiveAttribute) {
+            let tableHTML = '';
+            let groupId = 1;
+            
+            Object.keys(groups).forEach(key => {
+                const group = groups[key];
+                const size = group.length;
+                const sensitiveValues = new Set(group.map(row => row[sensitiveAttribute]));
+                const diversity = sensitiveValues.size;
+                const risk = diversity === 0 ? 1 : 1 / diversity;
+                
+                tableHTML += `
+                    <tr>
+                        <td>${groupId}</td>
+                        <td>${size}</td>
+                        <td>${diversity}</td>
+                        <td class="${risk < 0.3 ? 'risk-low' : risk < 0.7 ? 'risk-medium' : 'risk-high'}">${risk.toFixed(2)}</td>
+                    </tr>
+                `;
+                
+                groupId++;
+            });
+            
+            equivalenceTable.querySelector('tbody').innerHTML = tableHTML;
+        }
+
+        // Calculate re-identification risk for a record
+        function calculateReidentificationRisk(record, quasiIdentifiers) {
+            // Count how many records share the same quasi-identifiers
+            const matchingRecords = anonymizedData.filter(row => 
+                quasiIdentifiers.every(col => row[col] === record[col])
+            );
+            
+            return 1 / matchingRecords.length;
+        }
+
+        // Update metrics
+        function updateMetrics() {
+            if (originalData.length === 0) return;
+            
+            const quasiIdentifiers = Array.from(document.querySelectorAll('#quasiIdentifiers input:checked'))
+                .map(checkbox => checkbox.value);
+            const sensitiveAttribute = sensitiveAttributeSelect.value;
+            
+            // Calculate k-anonymity
+            const groups = {};
+            anonymizedData.forEach(row => {
+                const key = quasiIdentifiers.map(col => row[col]).join('|');
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(row);
+            });
+            
+            const groupSizes = Object.values(groups).map(group => group.length);
+            const k = groupSizes.length > 0 ? Math.min(...groupSizes) : 0;
+            kValueMetric.textContent = k;
+            
+            // Calculate l-diversity
+            let l = 0;
+            Object.keys(groups).forEach(key => {
+                const sensitiveValues = new Set(groups[key].map(row => row[sensitiveAttribute]));
+                if (sensitiveValues.size > l) l = sensitiveValues.size;
+            });
+            lValueMetric.textContent = l;
+            
+            // Calculate t-closeness (simplified)
+            const globalDistribution = calculateDistribution(anonymizedData, sensitiveAttribute);
+            let maxDistance = 0;
+            
+            Object.keys(groups).forEach(key => {
+                const groupDistribution = calculateDistribution(groups[key], sensitiveAttribute);
+                let distance = 0;
+                Object.keys(globalDistribution).forEach(value => {
+                    const globalProb = globalDistribution[value] || 0;
+                    const groupProb = groupDistribution[value] || 0;
+                    distance += Math.abs(globalProb - groupProb);
+                });
+                if (distance > maxDistance) maxDistance = distance;
+            });
+            
+            tValueMetric.textContent = maxDistance.toFixed(2);
+            
+            // Calculate re-identification risk
+            const avgRisk = anonymizedData.reduce((sum, row) => 
+                sum + calculateReidentificationRisk(row, quasiIdentifiers), 0) / anonymizedData.length;
+            reidRisk.textContent = (avgRisk * 100).toFixed(1) + '%';
+            
+            // Calculate information loss metrics
+            const nae = calculateNAE(originalData, anonymizedData, numericColumns);
+            const mse = calculateMSE(originalData, anonymizedData, numericColumns);
+            const entropy = calculateEntropy(anonymizedData, sensitiveAttribute);
+            const utility = calculateUtility(originalData, anonymizedData);
+            
+            naeMetric.textContent = nae.toFixed(3);
+            mseMetric.textContent = mse.toFixed(3);
+            entropyMetric.textContent = entropy.toFixed(3);
+            utilityMetric.textContent = (utility * 100).toFixed(1) + '%';
+        }
+
+        // Calculate Normalized Absolute Error
+        function calculateNAE(original, anonymized, numericColumns) {
+            let totalError = 0;
+            let totalValues = 0;
+            
+            numericColumns.forEach(col => {
+                original.forEach((row, i) => {
+                    if (typeof row[col] === 'number' && typeof anonymized[i][col] === 'number') {
+                        totalError += Math.abs(row[col] - anonymized[i][col]);
+                        totalValues += Math.abs(row[col]);
+                    }
+                });
+            });
+            
+            return totalValues > 0 ? totalError / totalValues : 0;
+        }
+
+        // Calculate Mean Squared Error
+        function calculateMSE(original, anonymized, numericColumns) {
+            let totalError = 0;
+            let totalValues = 0;
+            
+            numericColumns.forEach(col => {
+                original.forEach((row, i) => {
+                    if (typeof row[col] === 'number' && typeof anonymized[i][col] === 'number') {
+                        totalError += Math.pow(row[col] - anonymized[i][col], 2);
+                        totalValues++;
+                    }
+                });
+            });
+            
+            return totalValues > 0 ? totalError / totalValues : 0;
+        }
+
+        // Calculate entropy
+        function calculateEntropy(data, attribute) {
+            const distribution = calculateDistribution(data, attribute);
+            let entropy = 0;
+            
+            Object.values(distribution).forEach(prob => {
+                if (prob > 0) {
+                    entropy -= prob * Math.log2(prob);
+                }
+            });
+            
+            return entropy;
+        }
+
+        // Calculate utility (simplified)
+        function calculateUtility(original, anonymized) {
+            let matches = 0;
+            let total = 0;
+            
+            original.forEach((row, i) => {
+                Object.keys(row).forEach(col => {
+                    if (row[col] === anonymized[i][col]) {
+                        matches++;
+                    }
+                    total++;
+                });
+            });
+            
+            return total > 0 ? matches / total : 0;
+        }
+
+        // Perform re-identification attack
+        function performReidentificationAttack() {
+            if (externalData.length === 0) {
+                reidResults.innerHTML = '<p>No external data uploaded for re-identification attack.</p>';
+                return;
+            }
+            
+            const quasiIdentifiers = Array.from(document.querySelectorAll('#quasiIdentifiers input:checked'))
+                .map(checkbox => checkbox.value);
+            
+            if (quasiIdentifiers.length === 0) {
+                reidResults.innerHTML = '<p>Please select quasi-identifiers first.</p>';
+                return;
+            }
+            
+            let matches = 0;
+            externalData.forEach(externalRecord => {
+                const matchingAnonymized = anonymizedData.find(anonymizedRecord => 
+                    quasiIdentifiers.every(col => 
+                        externalRecord[col] === anonymizedRecord[col]
+                    )
+                );
+                
+                if (matchingAnonymized) {
+                    matches++;
+                }
+            });
+            
+            const matchRate = (matches / externalData.length) * 100;
+            reidResults.innerHTML = `
+                <p><strong>Re-identification Attack Results:</strong></p>
+                <p>External records: ${externalData.length}</p>
+                <p>Matches found: ${matches}</p>
+                <p>Match rate: ${matchRate.toFixed(2)}%</p>
+                <p class="${matchRate < 10 ? 'risk-low' : matchRate < 30 ? 'risk-medium' : 'risk-high'}">
+                    Risk level: ${matchRate < 10 ? 'Low' : matchRate < 30 ? 'Medium' : 'High'}
+                </p>
+            `;
+        }
+
+        // Sweep parameters
+        function sweepParameters() {
+            if (originalData.length === 0) {
+                alert('Please load data first.');
+                return;
+            }
+            
+            const tradeoffData = [];
+            const parameter = currentPrivacyModel === 'differential' ? 'epsilon' : 'k';
+            const min = parameter === 'epsilon' ? 0.1 : 2;
+            const max = parameter === 'epsilon' ? 5 : 10;
+            const step = parameter === 'epsilon' ? 0.5 : 1;
+            
+            for (let value = min; value <= max; value += step) {
+                // Apply privacy with current parameter value
+                if (parameter === 'epsilon') {
+                    epsilon.value = value;
+                    epsilonDisplay.textContent = value.toFixed(2);
+                } else {
+                    kValue.value = value;
+                    kValueDisplay.textContent = value;
+                }
+                
+                applyPrivacyProtection();
+                
+                // Calculate utility loss
+                const utility = calculateUtility(originalData, anonymizedData);
+                const utilityLoss = (1 - utility) * 100;
+                
+                tradeoffData.push({
+                    x: value,
+                    y: utilityLoss
+                });
+            }
+            
+            // Update tradeoff chart
+            charts.tradeoff.data.datasets[0].data = tradeoffData;
+            charts.tradeoff.options.scales.x.title.text = parameter === 'epsilon' ? 'Epsilon (ε)' : 'k';
+            charts.tradeoff.update();
+            
+            // Reset to original values
+            revertToOriginal();
+        }
+
+        // Export anonymized CSV
+        function exportAnonymizedCsv() {
+            if (anonymizedData.length === 0) {
+                alert('No data to export.');
+                return;
+            }
+            
+            const csv = Papa.unparse(anonymizedData);
+            downloadFile(csv, 'anonymized_data.csv', 'text/csv');
+        }
+
+        // Export anonymized JSON
+        function exportAnonymizedJson() {
+            if (anonymizedData.length === 0) {
+                alert('No data to export.');
+                return;
+            }
+            
+            const json = JSON.stringify(anonymizedData, null, 2);
+            downloadFile(json, 'anonymized_data.json', 'application/json');
+        }
+
+        // Export report
+        function exportReport() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                originalDataStats: {
+                    recordCount: originalData.length,
+                    columns: columns
+                },
+                privacySettings: {
+                    model: currentPrivacyModel,
+                    k: parseInt(kValue.value),
+                    l: parseInt(lValue.value),
+                    t: parseFloat(tValue.value),
+                    epsilon: parseFloat(epsilon.value),
+                    delta: parseFloat(delta.value),
+                    sensitivity: parseFloat(sensitivity.value),
+                    transformations: {
+                        generalization: generalizationCheck.checked,
+                        suppression: suppressionCheck.checked,
+                        noise: noiseCheck.checked
+                    }
+                },
+                metrics: {
+                    kAnonymity: parseInt(kValueMetric.textContent),
+                    lDiversity: parseInt(lValueMetric.textContent),
+                    tCloseness: parseFloat(tValueMetric.textContent),
+                    reidentificationRisk: parseFloat(reidRisk.textContent),
+                    nae: parseFloat(naeMetric.textContent),
+                    mse: parseFloat(mseMetric.textContent),
+                    entropy: parseFloat(entropyMetric.textContent),
+                    utility: parseFloat(utilityMetric.textContent) / 100
+                }
+            };
+            
+            downloadFile(JSON.stringify(report, null, 2), 'privacy_report.json', 'application/json');
+        }
+
+        // Download file utility
+        function downloadFile(content, fileName, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Save to localStorage
+        function saveToLocalStorage() {
+            const data = {
+                originalData,
+                anonymizedData,
+                columns
+            };
+            localStorage.setItem('privacyPlaygroundData', JSON.stringify(data));
+        }
+
+        // Reset application
+        function resetApp() {
+            if (confirm('Are you sure you want to reset the application? All data will be lost.')) {
+                originalData = [];
+                anonymizedData = [];
+                externalData = [];
+                columns = [];
+                localStorage.removeItem('privacyPlaygroundData');
+                location.reload();
+            }
+        }
+
+        // Initialize UI
+        updatePrivacyModelUI();
+    </script>
+</body>
+</html>
